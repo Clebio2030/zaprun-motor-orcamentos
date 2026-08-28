@@ -1,0 +1,21 @@
+{
+  "name": "zaprun-motor-orcamentos",
+  "version": "1.0.0",
+  "description": "Motor ZapRun Orçamentos — lê os orçamentos do ERP (Firebird) na máquina do cliente e entrega na API do ZapRun",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test src/motor/*.test.js"
+  },
+  "author": "ZapRun",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "node-cron": "^4.2.1",
+    "node-firebird": "^1.1.9"
+  }
+}

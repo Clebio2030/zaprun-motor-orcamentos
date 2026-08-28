@@ -1,0 +1,26 @@
+{
+  "githubOwner": "Clebio2030",
+  "githubRepo": "zaprun-motor-orcamentos",
+  "githubToken": "",
+  "releaseAssetNameContains": "",
+  "serviceName": "ZapRunOrcamentos",
+  "healthUrl": "http://127.0.0.1:3001/health",
+  "backupDir": "c:/ZapRun/Orcamentos/updater/backups",
+  "tempDir": "c:/ZapRun/Orcamentos/updater/temp",
+  "managedPaths": [
+    "backend",
+    "sql",
+    "INSTALAR.bat",
+    "instalar_servico.bat",
+    "deletar_servico.bat",
+    "ADICIONAR_INSTANCIA.bat"
+  ],
+  "preservePaths": [
+    "backend/.env",
+    "backend/sync_state.json",
+    "backend/logs",
+    "backend/node_modules",
+    ".git"
+  ],
+  "checkIntervalHours": 24
+}

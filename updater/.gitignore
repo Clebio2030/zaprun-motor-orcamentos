@@ -1,0 +1,6 @@
+backups/
+temp/
+logs/
+*.zip
+updater.log
+secrets.json

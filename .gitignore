@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+backend/node_modules/
+
+# Ambiente e estado do cliente (preservados pelo updater, nunca versionados)
+.env
+backend/.env
+backend/sync_state.json
+backend/sync_state.json.tmp
+backend/logs/
+
+# Updater: runtime da máquina do cliente
+updater/updater.log
+updater/backups/
+updater/temp/
+updater/secrets.json
+updater/version.json
+
+# Pacote de distribuição gerado (é anexado na release, não versionado)
+ZapRunOrcamentos.zip
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.log
+
+.claude/

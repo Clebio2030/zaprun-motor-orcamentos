@@ -1,0 +1,16 @@
+# O Motor roda em Windows. Os .bat PRECISAM chegar com CRLF: o cmd.exe quebra
+# em labels e blocos `(` `)` quando o arquivo vem com LF puro — e o sintoma é
+# um instalador que fecha sozinho no meio, sem erro legível.
+*.bat text eol=crlf
+
+# O resto é lido pelo Node, que não se importa. LF mantém o diff limpo.
+*.js   text eol=lf
+*.json text eol=lf
+*.sql  text eol=lf
+*.md   text eol=lf
+
+# Binários: nunca converter.
+*.exe binary
+*.msi binary
+*.zip binary
+*.ico binary
