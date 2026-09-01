@@ -189,6 +189,14 @@ echo.
 set "FB_PATH="
 set /p FB_PATH="Digite o caminho COMPLETO da pasta do Firebird: "
 
+:: O Explorer do Windows, em "Copiar como caminho", coloca ASPAS em volta.
+:: Coladas aqui, elas viravam ""C:\...."\firebird.conf" e o teste falhava
+:: sempre, mesmo com o caminho certo.
+set "FB_PATH=!FB_PATH:"=!"
+
+:: Barra no fim geraria "C:\pasta\\firebird.conf".
+if "!FB_PATH:~-1!"=="\" set "FB_PATH=!FB_PATH:~0,-1!"
+
 if "!FB_PATH!"=="" (
     echo.
     echo [ERRO] O caminho nao pode ficar vazio.
@@ -207,7 +215,7 @@ if not exist "!FB_PATH!\firebird.conf" (
     echo.
     echo Caminho invalido: !FB_PATH!
     echo Abra o Disco C:, ache onde o Firebird foi instalado, copie o
-    echo caminho da barra de enderecos e cole aqui (botao direito cola).
+    echo caminho da barra de enderecos e cole aqui com o botao direito.
     echo.
     pause
     color 07
