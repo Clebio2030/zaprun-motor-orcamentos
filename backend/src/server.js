@@ -18,6 +18,7 @@ const { logInfo, logError } = require('./logger');
 const { ensureUpdaterSchedule } = require('./ensureUpdaterSchedule');
 const { snapshotState } = require('./motor/syncState');
 const { estadoDasViews } = require('./motor/migrations');
+const { lerColunas, TABELAS_PADRAO } = require('./motor/schema');
 
 // Sobe o motor (cron + primeiro ciclo).
 const { runMotor, estadoDoMotor } = require('./motor');
@@ -99,6 +100,32 @@ app.get('/status', async (_req, res) => {
     views: estadoDasViews(),
     sincronizacao: snapshotState()
   });
+});
+
+// Colunas reais das tabelas do ERP.
+//
+// Serve para escrever a view sem adivinhar: o Firebird recusa a criação inteira
+// no PRIMEIRO nome errado, então sem isto cada coluna errada custava uma ida e
+// volta com alguém na frente da máquina do cliente.
+//
+// Lê apenas o CATÁLOGO (RDB$RELATION_FIELDS). Nenhum dado de cliente — nome,
+// telefone ou valor — passa por aqui.
+//
+//   GET /diagnostico/colunas
+//   GET /diagnostico/colunas?tabelas=ORCAMENTO,ORCPROD
+app.get('/diagnostico/colunas', async (req, res) => {
+  const pedidas = String(req.query.tabelas || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  try {
+    const colunas = await lerColunas(pedidas.length ? pedidas : TABELAS_PADRAO);
+    res.json({ database: process.env.FB_DATABASE || null, colunas });
+  } catch (err) {
+    logError('[ZapRun] Falha ao ler o schema do ERP', err);
+    res.status(500).json({ erro: err.message });
+  }
 });
 
 // Força um ciclo agora. Serve ao implantador: instalou, quer ver chegar sem
