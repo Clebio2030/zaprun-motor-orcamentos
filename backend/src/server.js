@@ -17,6 +17,7 @@ const firebird = require('node-firebird');
 const { logInfo, logError } = require('./logger');
 const { ensureUpdaterSchedule } = require('./ensureUpdaterSchedule');
 const { snapshotState } = require('./motor/syncState');
+const { estadoDasViews } = require('./motor/migrations');
 
 // Sobe o motor (cron + primeiro ciclo).
 const { runMotor, estadoDoMotor } = require('./motor');
@@ -94,6 +95,8 @@ app.get('/status', async (_req, res) => {
     token: token ? `${token.slice(0, 12)}...` : '(não configurado)',
     firebird: (await testarFirebird()) ? 'ok' : 'error',
     database: process.env.FB_DATABASE || '(não configurado)',
+    // Por que a view falhou, e não só o sintoma "Table unknown" do ciclo.
+    views: estadoDasViews(),
     sincronizacao: snapshotState()
   });
 });
