@@ -64,10 +64,22 @@ SELECT
     CAST(o.NRORCAMENTO AS VARCHAR(30)  CHARACTER SET OCTETS),
     o.DTORC,
     -- Momento da emissão COM hora, para a régua de follow-up (a primeira etapa
-    -- é 3h após emitir). DTORC costuma vir à meia-noite em alguns cadastros e a
-    -- hora fica em HORAORC; o COALESCE cobre os dois casos sem precisar saber
-    -- de antemão qual o ERP daquele cliente preenche.
-    COALESCE(o.HORAORC, o.DTORC),
+    -- vence 3h após emitir).
+    --
+    -- A hora fica em HORAORC, mas NÃO dá para usar essa coluna direto: em ERP
+    -- Delphi um campo de hora costuma guardar a data 30/12/1899 (o zero do
+    -- TDateTime). Um COALESCE(HORAORC, DTORC) traria "1899-12-30 14:35" e a
+    -- régua concluiria que todo orçamento está parado há 127 anos — disparando
+    -- as quatro etapas de uma vez, para todos os vendedores.
+    --
+    -- Por isso: DATA vem de DTORC, HORA e MINUTO vêm de HORAORC. Funciona tanto
+    -- se HORAORC tiver a data certa quanto se tiver 1899. Com HORAORC nulo, cai
+    -- em DTORC inteiro.
+    COALESCE(
+      DATEADD(MINUTE, EXTRACT(MINUTE FROM o.HORAORC),
+        DATEADD(HOUR, EXTRACT(HOUR FROM o.HORAORC),
+          CAST(CAST(o.DTORC AS DATE) AS TIMESTAMP))),
+      o.DTORC),
     CASE o.STATUS
       WHEN 0 THEN CAST('ABERTO'    AS VARCHAR(20) CHARACTER SET OCTETS)
       WHEN 1 THEN CAST('FINALIZADO' AS VARCHAR(20) CHARACTER SET OCTETS)
