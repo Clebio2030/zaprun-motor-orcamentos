@@ -98,7 +98,6 @@ que pergunta o token e o escreve na máquina do cliente.
 | `INSTALAR.bat` | `backend/logs/` |
 | `instalar_servico.bat` | `backend/node_modules/` |
 | `deletar_servico.bat` | `.git` |
-| `ADICIONAR_INSTANCIA.bat` | |
 
 **`updater/` não está em `managedPaths`** — o updater não se atualiza sozinho.
 É proposital: uma release com updater quebrado deixaria a frota inteira sem

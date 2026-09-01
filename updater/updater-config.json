@@ -12,8 +12,7 @@
     "sql",
     "INSTALAR.bat",
     "instalar_servico.bat",
-    "deletar_servico.bat",
-    "ADICIONAR_INSTANCIA.bat"
+    "deletar_servico.bat"
   ],
   "preservePaths": [
     "backend/.env",

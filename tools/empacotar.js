@@ -40,6 +40,17 @@ const EXCLUIR = [
   /^backend\/logs(\/|$)/,
   /^nssm\/src(\/|$)/,
   /^tools(\/|$)/,
+  // Documentação e arquivos de desenvolvimento não vão para a máquina do
+  // cliente. Quem instala segue o roteiro do painel; CLAUDE.md, README e docs/
+  // falam com quem MEXE no Motor, não com quem o instala — e na pasta do
+  // cliente viram só ruído para o técnico decidir se pode apagar.
+  /^CLAUDE\.md$/,
+  /^README\.md$/,
+  /^AGENTS\.md$/,
+  /^docs(\/|$)/,
+  // Só fazem sentido dentro de um clone do git.
+  /^\.gitattributes$/,
+  /^\.gitignore$/,
   /^updater\/(backups|temp)(\/|$)/,
   /^updater\/(updater\.log|secrets\.json)$/,
   /\.zip$/,

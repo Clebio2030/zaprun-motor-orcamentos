@@ -73,11 +73,6 @@ POST http://127.0.0.1:3001/sync
 
 Depois, confira no painel do ZapRun se os orçamentos chegaram.
 
-## Mais de um banco na mesma máquina
-
-`ADICIONAR_INSTANCIA.bat` instala uma segunda instância, com porta e serviço
-próprios. Cada instância precisa do **seu** token.
-
 ## Quando dá errado
 
 | Sintoma | Causa provável | O que fazer |
