@@ -18,7 +18,7 @@
 //   ID_ORCAMENTO   chave do orçamento no ERP → vira `externalId` (idempotência)
 //
 // Colunas OPCIONAIS (ausência não quebra nada — o campo vai `null`):
-//   NUMERO, DTEMISSAO, DTVALIDADE, SITUACAO
+//   NUMERO, DTEMISSAO, DTEMISSAO_TS, DTVALIDADE, SITUACAO
 //   CLIENTE, CLIENTE_DOC, CLIENTE_FONE, CLIENTE_EMAIL
 //   VENDEDOR_COD, VENDEDOR
 //   VL_TOTAL, VL_DESCONTO, VL_LIQUIDO, VL_SUBTOTAL
@@ -80,6 +80,20 @@ function toInt(v) {
   return n === null ? null : Math.trunc(n);
 }
 
+/**
+ * Date do Firebird → ISO completo (com hora) ou null.
+ *
+ * Diferente de toDateOnly: aqui a hora IMPORTA, então mantemos o instante. O
+ * driver devolve a data no fuso do processo (a máquina do cliente), e o ISO
+ * carrega o offset — o servidor recebe o instante certo mesmo com fusos
+ * diferentes.
+ */
+function toDataHora(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const d = v instanceof Date ? v : new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 /** Date do Firebird → "YYYY-MM-DD" (data local, sem deslocar por fuso) ou null. */
 function toDateOnly(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -136,6 +150,10 @@ function mapCabecalho(row) {
     erpCompanyDoc: readTextOrNull(row, 'CGC') || readTextOrNull(row, 'CNPJ'),
     numero: readTextOrNull(row, 'NUMERO'),
     emitidoEm: toDateOnly(col(row, 'DTEMISSAO')),
+    // Com hora: a régua de follow-up começa 3h após a emissão, e a data pura
+    // não permite esse cálculo. Vai como ISO para não depender do fuso de quem
+    // lê do outro lado.
+    emitidoEmTs: toDataHora(col(row, 'DTEMISSAO_TS')) || toDataHora(col(row, 'DTEMISSAO')),
     validoAte: toDateOnly(col(row, 'DTVALIDADE')),
     situacao: readTextOrNull(row, 'SITUACAO'),
     cliente: {
@@ -229,5 +247,6 @@ module.exports = {
   rawSerializavel,
   toNumber,
   toInt,
-  toDateOnly
+  toDateOnly,
+  toDataHora
 };

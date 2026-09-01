@@ -50,7 +50,7 @@
    ========================================================================== */
 
 CREATE OR ALTER VIEW ZAPRUN_ORCAMENTOS (
-    IDEMPRESA, ID_ORCAMENTO, NUMERO, DTEMISSAO, SITUACAO,
+    IDEMPRESA, ID_ORCAMENTO, NUMERO, DTEMISSAO, DTEMISSAO_TS, SITUACAO,
     CLIENTE, CLIENTE_DOC, CLIENTE_FONE, CLIENTE_EMAIL, CLIENTE_COD,
     VENDEDOR_COD, VENDEDOR, VENDEDOR_FONE,
     VL_TOTAL, VL_DESCONTO, VL_SUBTOTAL,
@@ -63,6 +63,11 @@ SELECT
     CAST(o.NRORCAMENTO AS VARCHAR(30)  CHARACTER SET OCTETS),
     CAST(o.NRORCAMENTO AS VARCHAR(30)  CHARACTER SET OCTETS),
     o.DTORC,
+    -- Momento da emissão COM hora, para a régua de follow-up (a primeira etapa
+    -- é 3h após emitir). DTORC costuma vir à meia-noite em alguns cadastros e a
+    -- hora fica em HORAORC; o COALESCE cobre os dois casos sem precisar saber
+    -- de antemão qual o ERP daquele cliente preenche.
+    COALESCE(o.HORAORC, o.DTORC),
     CASE o.STATUS
       WHEN 0 THEN CAST('ABERTO'    AS VARCHAR(20) CHARACTER SET OCTETS)
       WHEN 1 THEN CAST('FINALIZADO' AS VARCHAR(20) CHARACTER SET OCTETS)
