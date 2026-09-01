@@ -21,7 +21,7 @@
 //   NUMERO, DTEMISSAO, DTVALIDADE, SITUACAO
 //   CLIENTE, CLIENTE_DOC, CLIENTE_FONE, CLIENTE_EMAIL
 //   VENDEDOR_COD, VENDEDOR
-//   VL_TOTAL, VL_DESCONTO, VL_LIQUIDO
+//   VL_TOTAL, VL_DESCONTO, VL_LIQUIDO, VL_SUBTOTAL
 //   ITEM_CODIGO, ITEM_DESCRICAO, ITEM_QTD, ITEM_VL_UNIT, ITEM_VL_TOTAL
 //
 // Toda coluna de TEXTO precisa sair da view como
@@ -151,6 +151,7 @@ function mapCabecalho(row) {
     valorTotal: toNumber(col(row, 'VL_TOTAL')),
     desconto: toNumber(col(row, 'VL_DESCONTO')),
     valorLiquido: toNumber(col(row, 'VL_LIQUIDO')),
+    subtotal: toNumber(col(row, 'VL_SUBTOTAL')),
     itens: [],
     raw: rawSerializavel(row)
   };
