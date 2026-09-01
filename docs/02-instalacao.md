@@ -23,8 +23,11 @@ Se isso passar, a metade servidor já está de pé.
 
 ## Instalação
 
-1. Copie o pacote para a máquina e extraia em **`C:\ZapRun\Orcamentos`**.
-2. Clique com o botão direito em **`INSTALAR.bat`** → **Executar como administrador**.
+1. Baixe o pacote no painel do ZapRun: **Atendimento → Orçamento ERP**, link
+   "baixar o Motor ZapRun Orçamentos" no rodapé da tela
+   (ou direto em `https://chat.zaprun.com.br/orcamentodownload`).
+2. Extraia em **`C:\ZapRun\Orcamentos`**.
+3. Clique com o botão direito em **`INSTALAR.bat`** → **Executar como administrador**.
    (Sem isso o script avisa e fecha — ele registra um serviço do Windows.)
 
 São 5 passos, quase todos automáticos:

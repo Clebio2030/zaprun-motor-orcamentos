@@ -65,6 +65,30 @@ schtasks /run /tn "ZapRunOrcamentosUpdater"
 
 Só então deixe a frota puxar sozinha nos horários normais.
 
+## ⚠️ Regerar o pacote de download
+
+O painel do ZapRun oferece o Motor em **`chat.zaprun.com.br/orcamentodownload`**,
+servido pelo nginx direto do disco. Esse arquivo **não se atualiza sozinho**.
+
+Depois de publicar uma release, rode no servidor:
+
+```bash
+cd /home/deploy/zaprun-motor-orcamentos
+node tools/empacotar.js
+```
+
+Isso regrava `/home/deploy/downloads/ZapRunOrcamentos.zip` (~30 MB, 42 arquivos).
+O script escreve num temporário e renomeia no fim, então quem estiver baixando
+durante a regeneração nunca recebe um zip pela metade.
+
+**Se esquecer deste passo**, quem baixar pelo painel instala a versão ANTIGA.
+Ela se corrige sozinha no primeiro ciclo do updater (08h/19h), mas o implantador
+vai instalar algo velho sem saber — e diagnosticar isso à distância é caro.
+
+O pacote exclui `.git`, `node_modules`, `.env`, `sync_state.json`, `logs`,
+`nssm/src` e `tools/`. O `.env` fica de fora de propósito: é o `INSTALAR.bat`
+que pergunta o token e o escreve na máquina do cliente.
+
 ## O que é atualizado e o que é preservado
 
 | `managedPaths` (atualizados) | `preservePaths` (nunca tocados) |
