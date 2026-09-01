@@ -30,8 +30,8 @@ const SOURCE_VERSION = require('../../package.json').version;
 const PADRAO = {
   cronExpr: '0 8-22 * * *',   // de hora em hora, das 08h às 22h
   chunkSize: 500,             // cabe folgado no bodyParser de 5 MB do ZapRun
-  janelaDias: 90,             // ciclo normal: pega retroativo recente
-  janelaInicialDias: 1095     // 1ª carga da empresa: 3 anos
+  janelaDias: 30,             // ciclo normal
+  janelaInicialDias: 30       // 1ª carga da empresa — igual, ver erpConfig.ts
 };
 
 let cicloEmAndamento = false;
@@ -146,6 +146,12 @@ async function enviarEmpresa({ erpCompanyId, orcamentos, chunkSize, meta }) {
   const snapshotId = crypto.randomUUID();
   const lotes = fatiarLote(orcamentos, chunkSize);
   let recebidosConfirmados = 0;
+  // Acumulados: sem isto o log mostrava os números do ÚLTIMO lote ao lado do
+  // total recebido ("confirmou 4859 ... novos=359"), o que parecia perda de
+  // dado quando na verdade 359 era só o tamanho do último lote.
+  let novos = 0;
+  let atualizados = 0;
+  let iguais = 0;
 
   for (let i = 0; i < lotes.length; i++) {
     if (lotes.length > 1) {
@@ -168,6 +174,9 @@ async function enviarEmpresa({ erpCompanyId, orcamentos, chunkSize, meta }) {
 
     const p = resp.persisted || {};
     recebidosConfirmados += Number(p.received || 0);
+    novos += Number(p.inserted || 0);
+    atualizados += Number(p.updated || 0);
+    iguais += Number(p.unchanged || 0);
 
     if (Array.isArray(p.rejected) && p.rejected.length > 0) {
       // Linha rejeitada é dado perdido. Tem que aparecer nomeada no log, senão
@@ -180,7 +189,7 @@ async function enviarEmpresa({ erpCompanyId, orcamentos, chunkSize, meta }) {
 
     if (i + 1 === lotes.length) {
       logInfo(
-        `[ZapRun] Empresa ${erpCompanyId}: API confirmou ${recebidosConfirmados} de ${expectedTotal} (novos=${p.inserted ?? '?'}, atualizados=${p.updated ?? '?'}, iguais=${p.unchanged ?? '?'}).`
+        `[ZapRun] Empresa ${erpCompanyId}: API confirmou ${recebidosConfirmados} de ${expectedTotal} (novos=${novos}, atualizados=${atualizados}, iguais=${iguais}).`
       );
     }
   }
