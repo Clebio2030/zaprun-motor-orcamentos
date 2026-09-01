@@ -17,10 +17,18 @@
      exclusão, ele congelaria como "aberto" para sempre no ZapRun, com o
      follow-up cobrando uma venda já encerrada. A situação vem como coluna.
 
-   • STATUS 0 = aberto, 1 = fechado (INTEGER, confirmado no catálogo).
-     "Fechado" não é traduzido para "aprovado": este ERP não distingue venda
-     ganha de perdida, e afirmar aprovação que ninguém informou falsearia
-     qualquer relatório de conversão.
+   • STATUS 0 = aberto, 1 = finalizado, 2 = cancelado (INTEGER no catálogo).
+     A view emite os TERMOS DO ERP; a tradução para o vocabulário do ZapRun
+     acontece no servidor (erpConfig.ts), onde é barata de corrigir.
+
+     "Finalizado" NÃO é traduzido para "aprovado". O ERP não diz se a venda foi
+     ganha ou perdida, e 83% dos orçamentos estão nesse estado — chamar isso de
+     aprovado daria uma taxa de conversão inventada. Se o cliente confirmar que
+     finalizado = venda fechada, é uma linha no servidor, sem release do Motor.
+
+   • STATUS fora de 0/1/2 cai no ELSE e chega como o número cru, virando
+     "desconhecido" no ZapRun com o valor preservado em `situacao`. Foi assim
+     que o 2 apareceu: nada se perdeu enquanto ele era desconhecido.
 
    • LEFT JOIN em tudo
      Com INNER JOIN, orçamento sem item — ou com vendedor nulo — desaparecia
@@ -56,8 +64,9 @@ SELECT
     CAST(o.NRORCAMENTO AS VARCHAR(30)  CHARACTER SET OCTETS),
     o.DTORC,
     CASE o.STATUS
-      WHEN 0 THEN CAST('ABERTO'  AS VARCHAR(20) CHARACTER SET OCTETS)
-      WHEN 1 THEN CAST('FECHADO' AS VARCHAR(20) CHARACTER SET OCTETS)
+      WHEN 0 THEN CAST('ABERTO'    AS VARCHAR(20) CHARACTER SET OCTETS)
+      WHEN 1 THEN CAST('FINALIZADO' AS VARCHAR(20) CHARACTER SET OCTETS)
+      WHEN 2 THEN CAST('CANCELADO' AS VARCHAR(20) CHARACTER SET OCTETS)
       ELSE CAST(o.STATUS AS VARCHAR(20) CHARACTER SET OCTETS)
     END,
     CAST(o.CLIENTE     AS VARCHAR(100) CHARACTER SET OCTETS),
