@@ -39,10 +39,20 @@
      Juntar só por NRORCAMENTO faria os itens da empresa 1 aparecerem no
      orçamento de mesmo número da empresa 2.
 
-   • Telefone com COALESCE
-     O follow-up precisa de um número que atenda. A ordem é a que mais tem
-     chance de ser WhatsApp: o cadastro do cliente primeiro, o que foi digitado
-     no orçamento por último.
+   • Telefone com COALESCE — o TELEFONE DO ORÇAMENTO vem PRIMEIRO
+     A ordem era a inversa (cadastro do cliente primeiro, orçamento por
+     último), e isso deixava 276 dos 454 orçamentos sem número: a maioria das
+     vendas é CLIENTE BALCAO (CDCLIENTE = 1), um cadastro genérico e
+     compartilhado, sem telefone nenhum. O número que existe nessas vendas é o
+     que o vendedor digita no campo Telefone da própria tela de orçamento —
+     e ele estava em terceiro lugar, atrás de duas colunas sempre nulas.
+
+     Vale também quando o cliente É cadastrado: o número digitado no orçamento
+     é o daquela venda, mais novo que o do cadastro.
+
+     NULLIF(TRIM(...), '') em cada candidato porque COALESCE só pula NULL.
+     Uma coluna preenchida com espaços venceria a disputa e entregaria um
+     telefone vazio — que no servidor vira "sem telefone" sem explicação.
 
    • CHARACTER SET OCTETS em toda coluna de texto
      As colunas são CHARACTER SET NONE com bytes WIN1252. Sem o CAST, o driver
@@ -88,8 +98,12 @@ SELECT
     END,
     CAST(o.CLIENTE     AS VARCHAR(100) CHARACTER SET OCTETS),
     CAST(cli.CGC       AS VARCHAR(15)  CHARACTER SET OCTETS),
-    CAST(COALESCE(cli.WHATSAPP, cli.CELULAR, o.TELEFONE, cli.TELEFONE)
-                       AS VARCHAR(20)  CHARACTER SET OCTETS),
+    CAST(COALESCE(
+           NULLIF(TRIM(o.TELEFONE),   ''),
+           NULLIF(TRIM(cli.WHATSAPP), ''),
+           NULLIF(TRIM(cli.CELULAR),  ''),
+           NULLIF(TRIM(cli.TELEFONE), '')
+         )             AS VARCHAR(20)  CHARACTER SET OCTETS),
     CAST(cli.EMAIL     AS VARCHAR(250) CHARACTER SET OCTETS),
     o.CDCLIENTE,
     CAST(o.CDVENDEDOR  AS VARCHAR(20)  CHARACTER SET OCTETS),

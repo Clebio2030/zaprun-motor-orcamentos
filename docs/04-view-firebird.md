@@ -117,6 +117,23 @@ SELECT COUNT(*) FROM ZAPRUN_ORCAMENTOS
 -- 4. Volume da janela normal (90 dias)
 SELECT COUNT(*) FROM ZAPRUN_ORCAMENTOS
  WHERE DTEMISSAO >= DATEADD(-90 DAY TO CURRENT_DATE);
+
+-- 5. Telefone chegando? Sem número não existe follow-up — é o insumo do
+--    módulo inteiro, e foi onde a primeira instalação falhou em silêncio:
+--    276 de 454 orçamentos vieram sem telefone porque a venda de balcão usa
+--    um cadastro de cliente genérico (CDCLIENTE = 1) sem número, e o
+--    COALESCE buscava o orçamento só em terceiro lugar.
+SELECT COUNT(*)                                        AS TOTAL,
+       COUNT(CLIENTE_FONE)                             AS COM_FONE,
+       COUNT(*) - COUNT(CLIENTE_FONE)                  AS SEM_FONE
+  FROM ZAPRUN_ORCAMENTOS
+ WHERE DTEMISSAO >= DATEADD(-30 DAY TO CURRENT_DATE);
+
+-- 6. Confere contra a tela: pegue um orçamento de balcão que VOCÊ VÊ com
+--    telefone no ERP e confirme que ele chega preenchido aqui.
+SELECT ID_ORCAMENTO, CLIENTE, CLIENTE_FONE
+  FROM ZAPRUN_ORCAMENTOS
+ WHERE ID_ORCAMENTO = '5543';
 ```
 
 Depois, com o serviço no ar:
