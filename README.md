@@ -56,6 +56,33 @@ tools/simular-motor.js   testa a API sem ERP e sem Windows
 INSTALAR.bat             instalador (rodar como Administrador)
 ```
 
+## A família de Motores
+
+Este é o primeiro Motor, e o desenho dele virou a base dos outros. O segundo é o
+**Motor ZapRun Shop** (`../motor-zaprunshop-erp`, repo `zaprun-shop-motor`), que
+lê o catálogo de produtos e alimenta a loja. Ver
+[ADR-167](../docs/10-decisoes/ADR-167-motor-zaprun-shop-catalogo-do-erp-2026-09.md).
+
+As duas instalações convivem na **mesma máquina do cliente**, então tudo que é
+identidade de instalação precisa diferir:
+
+| | Orçamentos (este) | Shop |
+|---|---|---|
+| Porta local | **3001** | 3002 |
+| Serviço Windows | **`ZapRunOrcamentos`** | `ZapRunShop` |
+| Repo de release | **`zaprun-motor-orcamentos`** | `zaprun-shop-motor` |
+| `backupDir`/`tempDir` | **`c:/ZapRun/Orcamentos/…`** | `c:/ZapRun/Shop/…` |
+| View | **`ZAPRUN_ORCAMENTOS`** | `ZAPRUN_SHOP` |
+| Endpoint | **`/erp/orcamentos/sync`** | `/erp/produtos/sync` |
+
+Repetir a porta faz o segundo serviço a subir morrer com `EADDRINUSE` — e o
+updater do primeiro passa a fazer health check no processo errado, o que é pior
+que falhar, porque ninguém percebe.
+
+Diferença de desenho que vale saber antes de copiar daqui para lá: **o Shop não
+tem janela de datas**. Catálogo não tem data de emissão, e um preço muda sem que
+nenhuma coluna de data mude — lá o ciclo lê tudo e deixa o hash decidir.
+
 ## Comandos
 
 ```bash
