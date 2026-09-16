@@ -4,7 +4,7 @@
   "githubToken": "",
   "releaseAssetNameContains": "",
   "serviceName": "ZapRunOrcamentos",
-  "healthUrl": "http://127.0.0.1:3001/health",
+  "healthUrl": "http://127.0.0.1:3020/health",
   "backupDir": "c:/ZapRun/Orcamentos/updater/backups",
   "tempDir": "c:/ZapRun/Orcamentos/updater/temp",
   "managedPaths": [

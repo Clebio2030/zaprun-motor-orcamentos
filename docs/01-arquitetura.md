@@ -14,7 +14,7 @@ existem o handshake, o `/status`, os logs nomeados e o updater automático.
 
 | Peça | Papel |
 |---|---|
-| `backend/src/server.js` | HTTP local em `127.0.0.1:3001`. Só `/health`, `/status` e `/sync`. |
+| `backend/src/server.js` | HTTP local em `127.0.0.1:3020`. Só `/health`, `/status` e `/sync`. |
 | `backend/src/motor/index.js` | O ciclo. Cron + orquestração. |
 | `backend/src/motor/mapping.js` | Traduz a view do ERP no nosso payload. |
 | `backend/src/motor/sender.js` | Handshake, POST, retry, fatiamento. |
@@ -138,7 +138,7 @@ cliente por release *e* roda sozinha.
 
 | Onde | O que responde |
 |---|---|
-| `http://127.0.0.1:3001/status` | versão, último ciclo, estado do Firebird, prefixo do token, `sync_state` |
+| `http://127.0.0.1:3020/status` | versão, último ciclo, estado do Firebird, prefixo do token, `sync_state` |
 | `backend/logs/zaprun-AAAA-MM-DD.log` | tudo, com prefixo `[ZapRun]` |
 | `GET /erp/status` (servidor) | quantos orçamentos daquela empresa chegaram, e quando |
 | `updater/updater.log` | histórico de atualização |

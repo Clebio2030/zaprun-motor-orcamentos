@@ -24,7 +24,7 @@ const { lerColunas, TABELAS_PADRAO } = require('./motor/schema');
 const { runMotor, estadoDoMotor } = require('./motor');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3020;
 
 app.use(express.json());
 

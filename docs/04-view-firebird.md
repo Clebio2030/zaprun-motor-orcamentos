@@ -139,8 +139,8 @@ SELECT ID_ORCAMENTO, CLIENTE, CLIENTE_FONE
 Depois, com o serviço no ar:
 
 ```
-POST http://127.0.0.1:3001/sync     força um ciclo agora
-GET  http://127.0.0.1:3001/status   mostra o resultado
+POST http://127.0.0.1:3020/sync     força um ciclo agora
+GET  http://127.0.0.1:3020/status   mostra o resultado
 ```
 
 E o log em `backend/logs/` dirá exatamente quantas linhas viraram quantos

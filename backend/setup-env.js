@@ -11,7 +11,7 @@ const envPath = path.join(__dirname, '.env');
 // de frota (cron, lote, janela) não pode morar aqui — ela vem do handshake com
 // o servidor a cada ciclo. Ver backend/.env.example.
 const DEFAULT_ENV = `# Servidor local (escuta só em 127.0.0.1)
-PORT=3001
+PORT=3020
 
 # Firebird do ERP
 FB_HOST=127.0.0.1

@@ -165,7 +165,7 @@ echo [SUCESSO] Ambiente configurado!
 echo.
 echo Configurando o atualizador automatico...
 cd /d "%~dp0\updater"
-node setup-updater.js "ZapRunOrcamentos" "3001"
+node setup-updater.js "ZapRunOrcamentos" "3020"
 cd /d "%~dp0"
 
 :: ==================================================
@@ -337,11 +337,11 @@ echo Aguardando o servico subir...
 timeout /t 8 >nul
 
 echo.
-echo Consultando http://127.0.0.1:3001/status ...
+echo Consultando http://127.0.0.1:3020/status ...
 echo.
 powershell -NoProfile -Command ^
     "try {" ^
-    "  $r = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/status' -TimeoutSec 20;" ^
+    "  $r = Invoke-RestMethod -Uri 'http://127.0.0.1:3020/status' -TimeoutSec 20;" ^
     "  Write-Host '  Versao do Motor : ' $r.sourceVersion;" ^
     "  Write-Host '  Firebird        : ' $r.firebird;" ^
     "  Write-Host '  Token           : ' $r.token;" ^
@@ -383,7 +383,7 @@ color 07
 echo.
 echo O Motor roda sozinho de hora em hora, das 08h as 22h.
 echo Para forcar um envio agora, abra no navegador da maquina:
-echo    http://127.0.0.1:3001/status
+echo    http://127.0.0.1:3020/status
 echo.
 echo Logs: backend\logs\zaprun-AAAA-MM-DD.log
 echo.

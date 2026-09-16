@@ -11,7 +11,7 @@ Serviço Node.js que roda **na máquina do cliente**, lê os orçamentos do ERP 
  │             ▲                │   HTTPS + token     │    orcamentos/sync   │
  │             │                │  ─────────────────► │                      │
  │  Motor (serviço Windows)     │                     │  ErpQuotes           │
- │    porta 3001, só localhost  │  ◄───────────────── │  ErpQuoteItems       │
+ │    porta 3020, só localhost  │  ◄───────────────── │  ErpQuoteItems       │
  │                              │   GET /erp/handshake│                      │
  └──────────────────────────────┘                     └──────────────────────┘
 ```
@@ -68,7 +68,7 @@ identidade de instalação precisa diferir:
 
 | | Orçamentos (este) | Shop |
 |---|---|---|
-| Porta local | **3001** | 3002 |
+| Porta local | **3020** | 3010 |
 | Serviço Windows | **`ZapRunOrcamentos`** | `ZapRunShop` |
 | Repo de release | **`zaprun-motor-orcamentos`** | `zaprun-shop-motor` |
 | `backupDir`/`tempDir` | **`c:/ZapRun/Orcamentos/…`** | `c:/ZapRun/Shop/…` |
@@ -93,9 +93,9 @@ cd backend && npm test
 ZAPRUN_TOKEN=zrerp_xxx node tools/simular-motor.js
 
 # na máquina do cliente: ver o estado
-#   http://127.0.0.1:3001/status
+#   http://127.0.0.1:3020/status
 # forçar um ciclo agora
-#   POST http://127.0.0.1:3001/sync
+#   POST http://127.0.0.1:3020/sync
 ```
 
 ## Estado atual
