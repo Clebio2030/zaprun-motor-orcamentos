@@ -101,4 +101,70 @@ function ensureUpdaterSchedule() {
   }
 }
 
-module.exports = { ensureUpdaterSchedule };
+// Garante o updater/version.json, pelo mesmo motivo do agendamento acima: a
+// pasta updater/ nao e atualizada nos clientes, e sem esse arquivo o
+// updater.js morre com ENOENT na PRIMEIRA linha, em todo ciclo, para sempre —
+// nenhuma release chega. Aconteceu no Ze Grande: instalado sem o arquivo (a
+// semente so passou a existir no repo na v1.0.6), o atualizador falhou em
+// 08:00 e 19:00 por dias.
+//
+// 0.0.0 = "nunca atualizou": o proximo ciclo baixa a release mais recente.
+function ensureUpdaterVersionFile() {
+  const arquivo = path.join(UPDATER_DIR, 'version.json');
+  try {
+    if (fs.existsSync(arquivo)) return;
+    if (!fs.existsSync(UPDATER_DIR)) return;
+
+    fs.writeFileSync(
+      arquivo,
+      JSON.stringify(
+        {
+          currentVersion: '0.0.0',
+          lastCheckAt: null,
+          lastUpdateAt: null,
+          lastStatus: 'never-run',
+          lastReleaseTag: null,
+          lastError: null
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    logInfo(`[Updater] version.json faltava e foi criado em ${arquivo}.`);
+  } catch (err) {
+    logError(`[Updater] Falha ao criar ${arquivo}: ${err.message}`);
+  }
+}
+
+// Garante que o health check do updater aponte para a porta em que o serviço
+// REALMENTE responde.
+//
+// Mesmo motivo dos dois acima: updater-config.json vive em updater/, que nunca
+// é atualizado. Quem instalou quando a porta era outra ficou com o endereço
+// velho gravado — e aí a atualização baixa, troca os arquivos, reinicia o
+// serviço, não consegue falar com ele na porta errada e DESFAZ tudo. Foi o que
+// aconteceu no Zé Grande: serviço novo no ar, health check na 3002, rollback.
+function ensureUpdaterHealthUrl(porta) {
+  const arquivo = path.join(UPDATER_DIR, 'updater-config.json');
+  try {
+    if (!fs.existsSync(arquivo)) return;
+
+    const cfg = JSON.parse(fs.readFileSync(arquivo, 'utf8').replace(/^\ufeff/, ''));
+    const esperado = `http://127.0.0.1:${porta}/health`;
+    if (cfg.healthUrl === esperado) return;
+
+    const anterior = cfg.healthUrl;
+    cfg.healthUrl = esperado;
+    fs.writeFileSync(arquivo, JSON.stringify(cfg, null, 2), 'utf8');
+    logInfo(`[Updater] healthUrl corrigido de ${anterior || '(vazio)'} para ${esperado}.`);
+  } catch (err) {
+    logError(`[Updater] Falha ao corrigir o healthUrl em ${arquivo}: ${err.message}`);
+  }
+}
+
+module.exports = {
+  ensureUpdaterSchedule,
+  ensureUpdaterVersionFile,
+  ensureUpdaterHealthUrl
+};
