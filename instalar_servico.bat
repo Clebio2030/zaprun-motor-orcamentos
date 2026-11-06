@@ -26,6 +26,7 @@ set "PASTA_PROJETO=%BASE_DIR%"
 set "PASTA_BACKEND=%BASE_DIR%\backend"
 set "SCRIPT_BACKEND=src\server.js"
 set "SCRIPT_UPDATER=%BASE_DIR%\updater\updater.js"
+set "BAT_UPDATER=%BASE_DIR%\updater\run-updater.bat"
 rem Horarios de checagem de update (manha e fim de tarde)
 set "HORA_ATUALIZADOR_1=08:00"
 set "HORA_ATUALIZADOR_2=19:00"
@@ -78,24 +79,23 @@ echo.
 echo ==================================================
 echo CONFIGURANDO AGENDADOR: %NOME_TAREFA%
 echo ==================================================
-if exist "%SCRIPT_UPDATER%" (
-    rem Tenta via PowerShell moderno (Windows 8/10/11/Server 2012+)
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "if (Get-Command Register-ScheduledTask -ErrorAction SilentlyContinue) {" ^
-        "  $action   = New-ScheduledTaskAction -Execute '\"%CAMINHO_NODE%\"' -Argument '\"%SCRIPT_UPDATER%\"';" ^
-        "  $triggers = @((New-ScheduledTaskTrigger -Daily -At '%HORA_ATUALIZADOR_1%'), (New-ScheduledTaskTrigger -Daily -At '%HORA_ATUALIZADOR_2%'));" ^
-        "  $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries;" ^
-        "  $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest;" ^
-        "  Register-ScheduledTask -TaskName '%NOME_TAREFA%' -Action $action -Trigger $triggers -Settings $settings -Principal $principal -Force | Out-Null;" ^
-        "  Write-Host 'Tarefa agendada criada com sucesso (08:00 e 19:00).';" ^
-        "  exit 0;" ^
-        "} else { exit 1; }"
-    if errorlevel 1 (
-        rem Fallback universal via schtasks (Windows 7 / Server 2008 R2 / maquinas com PowerShell legado)
-        schtasks /create /tn "%NOME_TAREFA%" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_1% /ru SYSTEM /rl HIGHEST /f >nul 2>&1
-        schtasks /create /tn "%NOME_TAREFA%_19h" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_2% /ru SYSTEM /rl HIGHEST /f >nul 2>&1
-        echo Tarefa agendada criada com sucesso via schtasks (08:00 e 19:00).
+if exist "%BAT_UPDATER%" (
+    rem Agendamento via schtasks universal (compativel com Windows 7, 8, 10, 11 e Server)
+    echo Criando tarefa das %HORA_ATUALIZADOR_1%...
+    schtasks /create /tn "%NOME_TAREFA%" /tr "\"%BAT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_1% /ru SYSTEM /f
+    if !errorlevel! neq 0 (
+        schtasks /create /tn "%NOME_TAREFA%" /tr "\"%BAT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_1% /f
     )
+    echo Criando tarefa das %HORA_ATUALIZADOR_2%...
+    schtasks /create /tn "%NOME_TAREFA%_19h" /tr "\"%BAT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_2% /ru SYSTEM /f
+    if !errorlevel! neq 0 (
+        schtasks /create /tn "%NOME_TAREFA%_19h" /tr "\"%BAT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_2% /f
+    )
+    echo Tarefas agendadas configuradas com sucesso (%HORA_ATUALIZADOR_1% e %HORA_ATUALIZADOR_2%).
+) else if exist "%SCRIPT_UPDATER%" (
+    schtasks /create /tn "%NOME_TAREFA%" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_1% /ru SYSTEM /f
+    schtasks /create /tn "%NOME_TAREFA%_19h" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_2% /ru SYSTEM /f
+    echo Tarefas agendadas configuradas com sucesso (%HORA_ATUALIZADOR_1% e %HORA_ATUALIZADOR_2%).
 ) else (
     echo [AVISO] Arquivo do updater nao encontrado em: %SCRIPT_UPDATER%
 )

@@ -74,10 +74,14 @@ function buildPowerShellScript(taskName, nodeExe, updaterScript) {
 
 function registerViaSchtasks(taskName, nodeExe, updaterScript) {
   try {
+    const batUpdater = path.join(path.dirname(updaterScript), 'run-updater.bat');
+    const hasBat = fs.existsSync(batUpdater);
+
     for (const h of HORARIOS) {
       const sufixo = h === '08:00' ? '' : `_${h.replace(':', 'h')}`;
       const nome = `${taskName}${sufixo}`;
-      const cmd = `schtasks /create /tn "${nome}" /tr "\\"${nodeExe}\\" \\"${updaterScript}\\"" /sc daily /st ${h} /ru SYSTEM /rl HIGHEST /f`;
+      const trTarget = hasBat ? batUpdater : `"${nodeExe}" "${updaterScript}"`;
+      const cmd = `schtasks /create /tn "${nome}" /tr "${trTarget}" /sc daily /st ${h} /ru SYSTEM /f`;
       spawnSync('cmd.exe', ['/c', cmd], { windowsHide: true });
     }
     logInfo(`[Schedule] Tarefa '${taskName}' garantida via schtasks (horarios: ${HORARIOS.join(', ')}).`);

@@ -26,15 +26,17 @@ const PASTA = "ZapRunOrcamentos";
 
 // O que NÃO vai no pacote do cliente:
 //   .git            458 MB de histórico, inútil na máquina do cliente
-//   node_modules    o INSTALAR.bat roda `npm install`
 //   .env            credencial; o instalador pergunta e escreve
 //   sync_state.json estado de outra máquina causaria sync incorreto
 //   logs            log de outro cliente
 //   nssm/src        código C++ do nssm; só os .exe são usados
 //   tools           scripts nossos, não do cliente
+//
+// NOTA: backend/node_modules VAI no pacote para garantir compatibilidade
+// imediata (Node 13 / Windows 7) sem depender de rede ou de npm na máquina do cliente.
 const EXCLUIR = [
   /^\.git(\/|$)/,
-  /(^|\/)node_modules(\/|$)/,
+  /^backend\/node_modules\/\.bin(\/|$)/,
   /^backend\/\.env$/,
   /^backend\/sync_state\.json/,
   // Estado da carteira de clientes (Reativar Clientes): é da máquina, não do pacote.
@@ -66,7 +68,7 @@ const listar = (dir, base = "") => {
     if (EXCLUIR.some(r => r.test(rel))) continue;
 
     const abs = path.join(dir, nome);
-    const st = fs.statSync(abs);
+    const st = fs.lstatSync(abs);
     if (st.isDirectory()) saida.push(...listar(abs, rel));
     else if (st.isFile()) saida.push(rel);
   }

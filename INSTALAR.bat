@@ -103,14 +103,27 @@ color 07
 if not exist "backend" goto ERROR_NO_BACKEND
 
 cd backend
-echo Executando 'npm install' (pode levar alguns minutos)...
 
-call npm install
+:: Se o node_modules contem resquicio de versao incompativel (com optional chaining), remove.
+if exist "node_modules\body-parser\lib\types\json.js" (
+    findstr "reviver" "node_modules\body-parser\lib\types\json.js" >nul 2>&1
+    if !errorlevel! EQU 0 (
+        echo.
+        echo [AVISO] Detectadas dependencias antigas incompativeis. Limpando pasta node_modules...
+        rd /s /q "node_modules" >nul 2>&1
+    )
+)
 
-if %errorlevel% NEQ 0 goto ERROR_INSTALL
-
-echo.
-echo [SUCESSO] Dependencias instaladas!
+if exist "node_modules\express" (
+    echo.
+    echo [SUCESSO] Dependencias ja estao inclusas no pacote!
+) else (
+    echo Executando 'npm install' (pode levar alguns minutos)...
+    call npm install
+    if !errorlevel! NEQ 0 goto ERROR_INSTALL
+    echo.
+    echo [SUCESSO] Dependencias instaladas!
+)
 
 :: ==================================================
 :: [PASSO 3/5] AMBIENTE (.env)
