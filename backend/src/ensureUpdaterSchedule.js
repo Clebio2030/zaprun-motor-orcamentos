@@ -72,6 +72,20 @@ function buildPowerShellScript(taskName, nodeExe, updaterScript) {
   ].join(' ');
 }
 
+function registerViaSchtasks(taskName, nodeExe, updaterScript) {
+  try {
+    for (const h of HORARIOS) {
+      const sufixo = h === '08:00' ? '' : `_${h.replace(':', 'h')}`;
+      const nome = `${taskName}${sufixo}`;
+      const cmd = `schtasks /create /tn "${nome}" /tr "\\"${nodeExe}\\" \\"${updaterScript}\\"" /sc daily /st ${h} /ru SYSTEM /rl HIGHEST /f`;
+      spawnSync('cmd.exe', ['/c', cmd], { windowsHide: true });
+    }
+    logInfo(`[Schedule] Tarefa '${taskName}' garantida via schtasks (horarios: ${HORARIOS.join(', ')}).`);
+  } catch (err) {
+    logError(`[Schedule] Falha no fallback schtasks para '${taskName}': ${err.message}`);
+  }
+}
+
 function ensureUpdaterSchedule() {
   if (process.platform !== 'win32') {
     return; // Agendador via schtasks/PowerShell so existe no Windows.
@@ -96,8 +110,8 @@ function ensureUpdaterSchedule() {
     const acao = /SKIP/.test(result.stdout || '') ? 'ja estava correta' : 'registrada/atualizada';
     logInfo(`[Schedule] Tarefa '${taskName}' ${acao} (horarios: ${HORARIOS.join(', ')}).`);
   } else {
-    const out = `${result.stdout || ''}${result.stderr || ''}`.trim();
-    logError(`[Schedule] Falha ao garantir tarefa '${taskName}': ${out || 'erro desconhecido'}`);
+    // Fallback: PowerShell antigo sem o modulo ScheduledTasks (Windows 7 / Server 2008)
+    registerViaSchtasks(taskName, nodeExe, UPDATER_SCRIPT);
   }
 }
 
