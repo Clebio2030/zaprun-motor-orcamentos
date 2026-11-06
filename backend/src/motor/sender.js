@@ -2,6 +2,7 @@
 // Conversa com a API do ZapRun:
 //   GET  /erp/handshake          → confirma o token e recebe a config de frota
 //   POST /erp/orcamentos/sync    → entrega os orçamentos em lotes
+//   POST /erp/clientes/sync      → entrega a carteira de clientes (Reativar Clientes)
 //
 // Retry: até RETRY_ATTEMPTS tentativas em erro 5xx/timeout. Erro 4xx do app
 // (validação, token revogado) NÃO é retentado — insistir não conserta.
@@ -108,11 +109,14 @@ async function handshake() {
 // ── Envio ────────────────────────────────────────────────────────────────────
 
 /**
+ * POST com retry nos erros transitórios. Erro 4xx do app volta na hora.
+ *
+ * @param {string} rota     ex.: "/erp/orcamentos/sync"
  * @param {object} payload
- * @returns {Promise<{ ok: boolean, persisted?: object, erro?: string }>}
+ * @returns {Promise<{ ok: boolean, persisted?: object, erro?: string, status?: number }>}
  */
-async function enviarOrcamentos(payload) {
-  const url = `${baseUrl()}/erp/orcamentos/sync`;
+async function postar(rota, payload) {
+  const url = `${baseUrl()}${rota}`;
 
   for (let tentativa = 1; tentativa <= RETRY_ATTEMPTS; tentativa++) {
     try {
@@ -125,17 +129,30 @@ async function enviarOrcamentos(payload) {
       if (ehTransitorio(err) && tentativa < RETRY_ATTEMPTS) {
         const espera = resolverEspera(err);
         logWarn(
-          `[ZapRun] POST /erp/orcamentos/sync retornou ${err.response?.status || 'timeout'}. Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
+          `[ZapRun] POST ${rota} retornou ${err.response?.status || 'timeout'}. Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
         );
         await sleep(espera);
         continue;
       }
       const erro = detalharErro(err);
-      logError(`[ZapRun] Falha definitiva no POST /erp/orcamentos/sync: ${erro}`);
-      return { ok: false, erro };
+      logError(`[ZapRun] Falha definitiva no POST ${rota}: ${erro}`);
+      return { ok: false, erro, status: err.response?.status };
     }
   }
   return { ok: false, erro: 'tentativas esgotadas' };
+}
+
+/** Orçamentos — POST /erp/orcamentos/sync. */
+function enviarOrcamentos(payload) {
+  return postar('/erp/orcamentos/sync', payload);
+}
+
+/**
+ * Carteira de clientes — POST /erp/clientes/sync ("Reativar Clientes").
+ * Mesmo contrato de integridade: `persisted.received` é o que vale.
+ */
+function enviarClientes(payload) {
+  return postar('/erp/clientes/sync', payload);
 }
 
 // ── Fatiamento ───────────────────────────────────────────────────────────────
@@ -187,6 +204,7 @@ function fatiarLote(lista, chunkSize, maxBytes = MAX_BYTES_POR_LOTE) {
 module.exports = {
   handshake,
   enviarOrcamentos,
+  enviarClientes,
   fatiarLote,
   MAX_BYTES_POR_LOTE
 };

@@ -37,6 +37,8 @@ const EXCLUIR = [
   /(^|\/)node_modules(\/|$)/,
   /^backend\/\.env$/,
   /^backend\/sync_state\.json/,
+  // Estado da carteira de clientes (Reativar Clientes): é da máquina, não do pacote.
+  /^backend\/clientes_state\.json/,
   /^backend\/logs(\/|$)/,
   /^nssm\/src(\/|$)/,
   /^tools(\/|$)/,

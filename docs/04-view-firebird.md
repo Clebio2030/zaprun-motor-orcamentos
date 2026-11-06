@@ -154,3 +154,31 @@ sobe, responde `/health`, loga *"views_zaprun.sql está vazio"* e não envia nad
 Isso é melhor do que uma view inventada: uma view errada entregaria dado errado
 em silêncio, e o custo de descobrir isso depois é muito maior do que o de não
 ter dado nenhum.
+
+---
+
+## Segunda view: `ZAPRUN_CLIENTES` (Reativar Clientes)
+
+Arquivo próprio: `sql/views_clientes.sql`. **Não** é aplicado no boot com as
+demais — só quando o handshake traz `clientes.ativo: true`, na primeira vez que
+o ciclo da carteira roda em cada processo. ERP de quem não usa o recurso não
+ganha view nem erro no log.
+
+Contrato: uma linha por cliente; `CDCLIENTE` obrigatório; colunas mapeadas em
+`backend/src/motor/mappingClientes.js`. Trocar de ERP = trocar o `.sql` + esse
+mapping.
+
+Regras da view (detalhadas no cabeçalho do `.sql`):
+
+- Nome próprio. A `REATIVANDO_CLIENTES` que o cliente usa no ERP fica intocada:
+  o `CREATE OR ALTER` do Motor trocaria a dele por uma com colunas OCTETS.
+- Última compra de `SAIDAESTOQUE` com `STATUS IN (1, 3)`, nunca de
+  `CLIENTE.DTULTCOMPRA` (a trigger do Automec só atualiza no INSERT).
+- Nada que dependa de `CURRENT_DATE` — quebraria o envio incremental. O teste
+  `clientes.test.js` confere isso e o número de colunas das duas partes do
+  `UNION`.
+- `CHARACTER SET OCTETS` em todo texto, com tamanhos generosos e **não
+  conferidos** contra o catálogo. Se a view não subir, o `/status` mostra o erro
+  do Firebird; confira com
+  `GET /diagnostico/colunas?tabelas=CLIENTE,SAIDAESTOQUE,MUNICIPIO,VENDEDOR,CONFIGURACAO`.
+- Firebird 3 ou mais novo (`ROW_NUMBER`, CTE).

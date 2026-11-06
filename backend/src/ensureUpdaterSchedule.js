@@ -163,8 +163,37 @@ function ensureUpdaterHealthUrl(porta) {
   }
 }
 
+/**
+ * Garante que um caminho esteja em `preservePaths` do updater-config.json.
+ *
+ * A pasta `updater/` não se atualiza sozinha nos clientes, então um arquivo de
+ * estado NOVO (ex.: backend/clientes_state.json) nunca entraria na lista de
+ * preservados — e o updater apaga, em `backend/`, tudo o que não vem na
+ * release nem está preservado. Sem isto, cada atualização jogaria fora o
+ * estado da carteira e o ciclo seguinte reenviaria os 50 mil clientes.
+ * Mesmo truque do ensureUpdaterHealthUrl: quem corrige é o backend, que chega
+ * na frota pela release.
+ */
+function ensureUpdaterPreservePath(relPath) {
+  const arquivo = path.join(UPDATER_DIR, 'updater-config.json');
+  try {
+    if (!fs.existsSync(arquivo)) return;
+
+    const cfg = JSON.parse(fs.readFileSync(arquivo, 'utf8').replace(/^\ufeff/, ''));
+    const lista = Array.isArray(cfg.preservePaths) ? cfg.preservePaths : [];
+    if (lista.includes(relPath)) return;
+
+    cfg.preservePaths = [...lista, relPath];
+    fs.writeFileSync(arquivo, JSON.stringify(cfg, null, 2), 'utf8');
+    logInfo(`[Updater] ${relPath} incluído em preservePaths.`);
+  } catch (err) {
+    logError(`[Updater] Falha ao incluir ${relPath} em preservePaths: ${err.message}`);
+  }
+}
+
 module.exports = {
   ensureUpdaterSchedule,
   ensureUpdaterVersionFile,
-  ensureUpdaterHealthUrl
+  ensureUpdaterHealthUrl,
+  ensureUpdaterPreservePath
 };

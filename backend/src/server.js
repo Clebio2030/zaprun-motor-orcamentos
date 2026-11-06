@@ -18,7 +18,8 @@ const { logInfo, logError } = require('./logger');
 const {
   ensureUpdaterSchedule,
   ensureUpdaterVersionFile,
-  ensureUpdaterHealthUrl
+  ensureUpdaterHealthUrl,
+  ensureUpdaterPreservePath
 } = require('./ensureUpdaterSchedule');
 const { snapshotState } = require('./motor/syncState');
 const { estadoDasViews } = require('./motor/migrations');
@@ -26,6 +27,7 @@ const { lerColunas, TABELAS_PADRAO } = require('./motor/schema');
 
 // Sobe o motor (cron + primeiro ciclo).
 const { runMotor, estadoDoMotor } = require('./motor');
+const { rodarClientes, estadoClientes } = require('./motor/clientes');
 
 const app = express();
 const PORT = process.env.PORT || 3020;
@@ -102,7 +104,10 @@ app.get('/status', async (_req, res) => {
     database: process.env.FB_DATABASE || '(não configurado)',
     // Por que a view falhou, e não só o sintoma "Table unknown" do ciclo.
     views: estadoDasViews(),
-    sincronizacao: snapshotState()
+    sincronizacao: snapshotState(),
+    // Carteira de clientes (Reativar Clientes): ligado no servidor ou não,
+    // como a view subiu, e o último ciclo — sem a lista de clientes.
+    clientes: estadoClientes()
   });
 });
 
@@ -140,6 +145,15 @@ app.post('/sync', (_req, res) => {
   res.json({ ok: true, mensagem: 'Ciclo disparado. Acompanhe em /status.' });
 });
 
+// Força o ciclo da CARTEIRA agora (Reativar Clientes). `?completo=1` manda
+// todos os clientes, não só os que mudaram. Só roda se o recurso estiver ligado
+// no servidor — o ciclo confere no handshake.
+app.post('/sync/clientes', (req, res) => {
+  const completo = ['1', 'true', 'sim'].includes(String(req.query.completo || '').toLowerCase());
+  rodarClientes({ motivo: 'manual', forcarCompleto: completo });
+  res.json({ ok: true, mensagem: 'Ciclo da carteira disparado. Acompanhe em /status (campo clientes).' });
+});
+
 app.listen(PORT, '127.0.0.1', () => {
   logInfo('================================================');
   logInfo(`  ZapRun Orçamentos rodando em http://127.0.0.1:${PORT}`);
@@ -148,6 +162,7 @@ app.listen(PORT, '127.0.0.1', () => {
   try {
     ensureUpdaterVersionFile();
     ensureUpdaterHealthUrl(PORT);
+    ensureUpdaterPreservePath('backend/clientes_state.json');
     ensureUpdaterSchedule();
   } catch (err) {
     logError('[ZapRun] Falha ao garantir o agendamento do updater', err);

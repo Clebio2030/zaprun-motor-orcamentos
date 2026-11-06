@@ -15,6 +15,11 @@ const { logInfo, logWarn, logError } = require('../logger');
 
 const SQL_PATH = path.join(__dirname, '..', '..', '..', 'sql', 'views_zaprun.sql');
 
+// View da carteira de clientes ("Reativar Clientes"). Arquivo À PARTE: só é
+// aplicado quando o handshake diz que a empresa usa o recurso — ver
+// motor/clientes.js e o cabeçalho do próprio .sql.
+const SQL_CLIENTES_PATH = path.join(__dirname, '..', '..', '..', 'sql', 'views_clientes.sql');
+
 /**
  * Remove comentários de bloco e de linha e devolve os comandos separados.
  *
@@ -46,26 +51,34 @@ function estadoDasViews() {
   return ultimaAplicacao;
 }
 
-async function runDatabaseMigrations() {
-  if (!fs.existsSync(SQL_PATH)) {
-    logWarn(`[ZapRun] ${SQL_PATH} não encontrado — nenhuma view aplicada.`);
-    ultimaAplicacao = {
+/**
+ * Aplica um arquivo .sql de views, comando a comando.
+ *
+ * Um comando que falha não aborta os outros; o resultado volta com os erros
+ * do Firebird, para o /status mostrar a CAUSA e não o sintoma.
+ *
+ * @param {string} caminho
+ * @param {string} rotulo   nome do arquivo para o log
+ * @returns {Promise<{estado, aplicados, falhas, erros, em?}>}
+ */
+async function aplicarArquivoSql(caminho, rotulo = path.basename(caminho)) {
+  if (!fs.existsSync(caminho)) {
+    logWarn(`[ZapRun] ${caminho} não encontrado — nenhuma view aplicada.`);
+    return {
       estado: 'arquivo-ausente',
       aplicados: 0,
       falhas: 0,
-      erros: [`arquivo não encontrado: ${SQL_PATH}`]
+      erros: [`arquivo não encontrado: ${caminho}`]
     };
-    return { aplicados: 0, falhas: 0 };
   }
 
-  const comandos = separarComandos(fs.readFileSync(SQL_PATH, 'utf8'));
+  const comandos = separarComandos(fs.readFileSync(caminho, 'utf8'));
   if (comandos.length === 0) {
-    logWarn('[ZapRun] views_zaprun.sql está vazio — nenhuma view aplicada.');
-    ultimaAplicacao = { estado: 'arquivo-vazio', aplicados: 0, falhas: 0, erros: [] };
-    return { aplicados: 0, falhas: 0 };
+    logWarn(`[ZapRun] ${rotulo} está vazio — nenhuma view aplicada.`);
+    return { estado: 'arquivo-vazio', aplicados: 0, falhas: 0, erros: [] };
   }
 
-  logInfo(`[ZapRun] Aplicando ${comandos.length} comando(s) SQL no Firebird...`);
+  logInfo(`[ZapRun] Aplicando ${comandos.length} comando(s) SQL de ${rotulo} no Firebird...`);
 
   let aplicados = 0;
   let falhas = 0;
@@ -80,21 +93,31 @@ async function runDatabaseMigrations() {
       falhas++;
       // Um comando que falha não pode abortar os outros: uma view quebrada não
       // deve impedir as demais de subir. Mas o erro TEM que aparecer no log —
-      // view faltando é a causa nº 1 de "não chega orçamento nenhum".
-      logError(`[ZapRun] Falha ao aplicar SQL (${comando.slice(0, 80)}...):`, err);
+      // view faltando é a causa nº 1 de "não chega dado nenhum".
+      logError(`[ZapRun] Falha ao aplicar SQL de ${rotulo} (${comando.slice(0, 80)}...):`, err);
     }
   }
 
-  ultimaAplicacao = {
+  logInfo(`[ZapRun] ${rotulo}: ${aplicados} ok, ${falhas} com erro.`);
+  return {
     estado: falhas === 0 ? 'ok' : 'com-erro',
     aplicados,
     falhas,
     erros,
     em: new Date().toISOString()
   };
-
-  logInfo(`[ZapRun] Views aplicadas: ${aplicados} ok, ${falhas} com erro.`);
-  return { aplicados, falhas };
 }
 
-module.exports = { runDatabaseMigrations, separarComandos, estadoDasViews, SQL_PATH };
+async function runDatabaseMigrations() {
+  ultimaAplicacao = await aplicarArquivoSql(SQL_PATH);
+  return { aplicados: ultimaAplicacao.aplicados, falhas: ultimaAplicacao.falhas };
+}
+
+module.exports = {
+  runDatabaseMigrations,
+  aplicarArquivoSql,
+  separarComandos,
+  estadoDasViews,
+  SQL_PATH,
+  SQL_CLIENTES_PATH
+};

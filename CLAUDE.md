@@ -4,6 +4,12 @@ Este repo é o **Motor ZapRun Orçamentos**: serviço Node.js que roda na máqui
 de cada cliente, lê os orçamentos do ERP dele (Firebird local) e entrega na API
 do ZapRun via `POST /erp/orcamentos/sync`.
 
+Desde 05/11/2026 ele lê também a **carteira de clientes** (Reativar Clientes):
+view `ZAPRUN_CLIENTES`, ciclo diário em `motor/clientes.js`, entrega em
+`POST /erp/clientes/sync`. Relatório novo do ERP entra AQUI, como mais um
+ciclo — não como outro Motor. Ver a seção "Carteira de clientes" de
+[docs/03-contrato-api.md](docs/03-contrato-api.md).
+
 ## ⚠️ Leia primeiro
 
 1. **[docs/01-arquitetura.md](docs/01-arquitetura.md)** — componentes, ciclo,
@@ -64,6 +70,9 @@ view só tem [3]".
 | Incluir `raw` no hash | Todo ciclo parece alteração (colunas voláteis do ERP) |
 | Gravar o hash antes de conferir `received` | Perda silenciosa de dado |
 | Mexer em `updater/` esperando que chegue aos clientes | `updater/` não está em `managedPaths` — não se atualiza sozinho |
+| Arquivo de estado novo em `backend/` sem `ensureUpdaterPreservePath` | O updater apaga o que não está na release nem em `preservePaths` — o estado some a cada update |
+| Coluna que depende de `CURRENT_DATE` numa view com envio por hash | Toda linha "muda" todo dia; o incremental vira carga completa diária |
+| Relatório novo em `views_zaprun.sql` | Roda no boot de TODA a frota; recurso opt-in vai em arquivo próprio, aplicado só quando o handshake liga |
 
 ## Release
 

@@ -30,3 +30,7 @@ Thumbs.db
 *.log
 
 .claude/
+
+# Estado da carteira de clientes (Reativar Clientes) — é da máquina
+backend/clientes_state.json
+backend/clientes_state.json.tmp

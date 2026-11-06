@@ -17,6 +17,7 @@
   "preservePaths": [
     "backend/.env",
     "backend/sync_state.json",
+    "backend/clientes_state.json",
     "backend/logs",
     "backend/node_modules",
     ".git"

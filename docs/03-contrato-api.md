@@ -199,3 +199,108 @@ leitura, e é por ela que os filtros funcionam:
 O de-para está em `backend/src/modules/erp/config/erpConfig.ts`. Situação que
 não reconhecemos vira `desconhecido` — e o texto original continua em `situacao`,
 então nada se perde e o de-para pode crescer depois.
+
+---
+
+## Carteira de clientes — "Reativar Clientes" (ADR-259 no ZapRun)
+
+O MESMO Motor lê um segundo relatório do ERP: a carteira de clientes inteira
+(view `ZAPRUN_CLIENTES`, em `sql/views_clientes.sql`), com a data da última
+compra calculada da tabela de vendas. Não é outro serviço nem outro token — é
+outro ciclo dentro deste Motor, com ritmo próprio (1 vez por dia).
+
+### No handshake
+
+O `GET /erp/handshake` de um token de escopo `orcamentos` traz o bloco:
+
+```json
+"clientes": {
+  "ativo": true,
+  "cronExpr": "40 6 * * *",
+  "chunkSize": 1000,
+  "fullACadaDias": 7,
+  "completoDesde": "2026-11-05T20:00:00.000Z"
+}
+```
+
+| Campo | Significado |
+|---|---|
+| `ativo` | Liga o ciclo da carteira. **Opt-in**: sem o bloco (API antiga) ou com `false`, o Motor não roda nada — nem cria a view no ERP. |
+| `cronExpr` | Ritmo do ciclo. Padrão 06:40, 1 vez por dia. |
+| `chunkSize` | Clientes por POST. |
+| `fullACadaDias` | Envio completo (todos, não só os que mudaram) a cada N dias. |
+| `completoDesde` | Pedido de recarga: se o último completo do Motor for anterior a este instante, o próximo ciclo manda tudo. É o "apagar o estado" sem RDP. |
+
+O ciclo de orçamentos (de hora em hora) é quem lê este bloco e agenda o da
+carteira; ligar no painel chega à máquina em até uma hora. Sem handshake (API
+fora do ar), o agendamento existente NÃO é desligado.
+
+### `POST /erp/clientes/sync`
+
+```jsonc
+{
+  "sourceVersion": "1.0.0",
+  "syncMode": "incremental",          // ou "full"
+  "snapshotId": "uuid-da-entrega",
+  "expectedTotal": 312,               // clientes nesta entrega (só os que mudaram, no incremental)
+  "totalCarteira": 50457,             // clientes lidos da view
+  "chunkInfo": { "atual": 1, "total": 1 },
+  "clientes": [
+    {
+      "externalId": "12345",          // CDCLIENTE — OBRIGATÓRIO
+      "erpCompanyId": 1,              // loja do cadastro (C.IDEMPRESA)
+      "nome": "JOSÉ DA CONCEIÇÃO",
+      "razao": null,
+      "documento": "12345678900",
+      "telefone": "2133334444",
+      "celular": "21987654321",
+      "telefone2": null,
+      "email": null,
+      "endereco": { "logradouro": "RUA A", "numero": "10", "bairro": "CENTRO",
+                    "subbairro": null, "cidade": "NOVA IGUAÇU", "uf": "RJ", "cep": "26000000" },
+      "cadastradoEm": "2021-03-02",
+      "primeiraCompraEm": "2021-03-02",
+      "ultimaCompraEm": "2026-07-15",  // de SAIDAESTOQUE (STATUS 1/3), nunca do CLIENTE.DTULTCOMPRA
+      "totalPedidos": 7,
+      "valorTotal": 12345.67,
+      "ultimoPedido": { "numero": "9981", "valor": 870.5, "erpCompanyId": 3,
+                        "loja": "ZÉ GRANDE MIGUEL COUTO", "vendedorCodigo": "7", "vendedorNome": "MÁRCIA" },
+      "vendedorResponsavel": { "codigo": "9", "nome": "PAULO" },
+      "inativoNoErp": false,
+      "raw": { "...": "linha crua da view" }
+    }
+  ]
+}
+```
+
+Não há "dias sem comprar" nem faixa no payload: dependem da data de hoje e
+mudariam todo dia para todos os clientes. O ZapRun calcula a faixa (30, 60, 90,
+180, 365 dias) a partir de `ultimaCompraEm`.
+
+**Resposta**: igual à dos orçamentos (`persisted.received/inserted/updated/
+unchanged/ignored/rejected/motivos`). Diferenças que importam:
+
+- `ignored` = cliente de loja que o token não autoriza. Conta em `received`.
+- A conferência do Motor é **por lote**: `received + rejected.length` tem de
+  ser o tamanho do lote. Cada lote confirmado grava na hora os hashes dos
+  clientes dele (`backend/clientes_state.json`) — numa carteira de 50 mil, um
+  lote que falha no meio não joga fora os que já chegaram.
+- Rejeitado **não aborta** a entrega: é nomeado no log, fica sem hash e vai de
+  novo no ciclo seguinte. Só é rejeitado cliente sem `externalId`.
+- `409` = Reativar Clientes desligado para a empresa (desligaram entre o
+  handshake e o envio). O Motor tenta de novo no próximo ciclo.
+
+### Estado local
+
+`backend/clientes_state.json`: um hash por cliente (CDCLIENTE → 16 hex) mais
+`ultimoCompleto` e `ultimoEnvio`. Preservado no update — o serviço inclui o
+caminho em `updater/updater-config.json → preservePaths` no boot
+(`ensureUpdaterPreservePath`), porque a pasta `updater/` não se atualiza
+sozinha. Apagar o arquivo = o próximo ciclo manda a carteira inteira
+(idempotente do lado de lá).
+
+### Rotas locais
+
+- `GET /status` → campo `clientes` (agendamento, estado da view, último ciclo,
+  quantos clientes confirmados).
+- `POST /sync/clientes` → força o ciclo agora; `?completo=1` manda todos.

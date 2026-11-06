@@ -21,6 +21,7 @@ const { handshake, enviarOrcamentos, fatiarLote } = require('./sender');
 const { extrairOrcamentos, listarEmpresasDoErp } = require('./extractor');
 const { checkStateChanged, getLastSyncedAt, updateState } = require('./syncState');
 const { runDatabaseMigrations } = require('./migrations');
+const clientes = require('./clientes');
 
 const SOURCE_VERSION = require('../../package.json').version;
 
@@ -54,6 +55,12 @@ async function runMotor() {
 
   try {
     const config = await resolverConfig();
+
+    // Carteira de clientes (Reativar Clientes): o handshake de toda hora é o
+    // que liga, troca ou desliga o agendamento dela. Sem handshake
+    // (`clientes: null`) não se mexe — servidor fora do ar não pode desligar
+    // um recurso que está ligado.
+    if (config.clientes) clientes.agendar(config.clientes);
 
     if (!config.ativo) {
       logWarn('[ZapRun] Integração desativada no servidor para esta empresa. Ciclo encerrado.');
@@ -217,7 +224,7 @@ async function resolverConfig() {
     // isso vem do servidor; sem resposta, mantemos ativo para não perder
     // janela de dado por instabilidade de rede nossa.
     logWarn('[ZapRun] Sem handshake — seguindo com a configuração padrão do código.');
-    return { ativo: true, ...PADRAO, erpCompanyIds: null };
+    return { ativo: true, ...PADRAO, erpCompanyIds: null, clientes: null };
   }
 
   return {
@@ -227,7 +234,8 @@ async function resolverConfig() {
     janelaDias: Number(remoto.janelaDias) || PADRAO.janelaDias,
     janelaInicialDias: Number(remoto.janelaInicialDias) || PADRAO.janelaInicialDias,
     erpCompanyIds: remoto.erpCompanyIds || null,
-    empresa: remoto.empresa || null
+    empresa: remoto.empresa || null,
+    clientes: clientes.lerConfig(remoto)
   };
 }
 
@@ -349,7 +357,18 @@ if (process.env.ZAPRUN_DISABLE_BOOTSTRAP !== 'true') {
       // Reagenda com o ritmo que o servidor manda, e roda o primeiro ciclo já.
       // Sem isto, uma instalação nova ficaria até uma hora sem enviar nada, e o
       // implantador não teria como saber se funcionou antes de ir embora.
-      runMotor().then(() => resolverConfig().then(c => aplicarCron(c.cronExpr)));
+      runMotor().then(() =>
+        resolverConfig().then(c => {
+          aplicarCron(c.cronExpr);
+          // Carteira de clientes: agenda e, se o último envio bom for velho
+          // (ou nunca houve), roda já — a instalação nova não espera o dia
+          // seguinte para o implantador ver chegar.
+          if (c.clientes) {
+            clientes.agendar(c.clientes);
+            clientes.rodarSeAtrasado(c.clientes);
+          }
+        })
+      );
     });
 }
 
