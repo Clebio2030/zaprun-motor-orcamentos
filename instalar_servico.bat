@@ -55,17 +55,21 @@ echo Parando/Removendo versao anterior se existir...
 "%CAMINHO_NSSM%" remove "%NOME_SERVICO%" confirm >nul 2>&1
 
 echo Registrando no Windows...
-"%CAMINHO_NSSM%" install "%NOME_SERVICO%" "%CAMINHO_NODE%" "%PASTA_BACKEND%\%SCRIPT_BACKEND%"
+"%CAMINHO_NSSM%" install "%NOME_SERVICO%" "%CAMINHO_NODE%"
 if %errorlevel% neq 0 (
     echo [ERRO] Falha ao instalar servico com NSSM.
     pause
     exit /b 1
 )
 
+if not exist "%PASTA_BACKEND%\logs" mkdir "%PASTA_BACKEND%\logs"
 "%CAMINHO_NSSM%" set "%NOME_SERVICO%" AppDirectory "%PASTA_BACKEND%"
+"%CAMINHO_NSSM%" set "%NOME_SERVICO%" AppParameters "src\server.js"
 "%CAMINHO_NSSM%" set "%NOME_SERVICO%" DisplayName "%NOME_SERVICO%"
 "%CAMINHO_NSSM%" set "%NOME_SERVICO%" Description "ZapRun Orcamentos - envia os orcamentos do ERP para o ZapRun"
 "%CAMINHO_NSSM%" set "%NOME_SERVICO%" Start SERVICE_AUTO_START
+"%CAMINHO_NSSM%" set "%NOME_SERVICO%" AppStdout "%PASTA_BACKEND%\logs\service.log"
+"%CAMINHO_NSSM%" set "%NOME_SERVICO%" AppStderr "%PASTA_BACKEND%\logs\service-error.log"
 
 echo Iniciando servico...
 net start "%NOME_SERVICO%"

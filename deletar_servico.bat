@@ -43,10 +43,15 @@ echo Verificando servico: !NOME_SERVICO!...
 for /f "delims=" %%i in ('"%CAMINHO_NSSM%" get "!NOME_SERVICO!" AppDirectory 2^>nul') do set "APP_DIR_SERVICO=%%i"
 
 if "!APP_DIR_SERVICO!"=="" (
-    color 0E
-    echo [AVISO] O servico '!NOME_SERVICO!' nao parece estar instalado.
-    pause
-    exit /b
+    sc query "!NOME_SERVICO!" >nul 2>&1
+    if errorlevel 1 (
+        color 0E
+        echo [AVISO] O servico '!NOME_SERVICO!' nao parece estar instalado no Windows.
+        pause
+        exit /b
+    )
+    echo O servico '!NOME_SERVICO!' existe no Windows. Removendo direto via SC/NSSM...
+    goto REMOVER_DIRETO
 )
 
 :: Normaliza caminhos para comparacao (remove aspas e barras invertidas extras se houver)
@@ -87,14 +92,17 @@ if /i "!DIR_LIMPO!"=="!LOCAL_LIMPO!" (
     color 07
 )
 
+:REMOVER_DIRETO
 set "NOME_TAREFA=!NOME_SERVICO!Updater"
 
 echo.
 echo Parando o servico !NOME_SERVICO!...
+net stop "!NOME_SERVICO!" >nul 2>&1
 "%CAMINHO_NSSM%" stop "!NOME_SERVICO!" >nul 2>&1
 
 echo Removendo o servico !NOME_SERVICO!...
-"%CAMINHO_NSSM%" remove "!NOME_SERVICO!" confirm
+"%CAMINHO_NSSM%" remove "!NOME_SERVICO!" confirm >nul 2>&1
+sc delete "!NOME_SERVICO!" >nul 2>&1
 
 echo Removendo tarefa agendada !NOME_TAREFA!...
 schtasks /delete /f /tn "!NOME_TAREFA!" >nul 2>&1
