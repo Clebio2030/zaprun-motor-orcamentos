@@ -94,7 +94,13 @@ if exist "%BAT_UPDATER%" (
     echo Tarefas agendadas configuradas com sucesso (%HORA_ATUALIZADOR_1% e %HORA_ATUALIZADOR_2%).
 ) else if exist "%SCRIPT_UPDATER%" (
     schtasks /create /tn "%NOME_TAREFA%" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_1% /ru SYSTEM /f
+    if !errorlevel! neq 0 (
+        schtasks /create /tn "%NOME_TAREFA%" /tr "%CAMINHO_NODE% %SCRIPT_UPDATER%" /sc daily /st %HORA_ATUALIZADOR_1% /ru SYSTEM /f
+    )
     schtasks /create /tn "%NOME_TAREFA%_19h" /tr "\"%CAMINHO_NODE%\" \"%SCRIPT_UPDATER%\"" /sc daily /st %HORA_ATUALIZADOR_2% /ru SYSTEM /f
+    if !errorlevel! neq 0 (
+        schtasks /create /tn "%NOME_TAREFA%_19h" /tr "%CAMINHO_NODE% %SCRIPT_UPDATER%" /sc daily /st %HORA_ATUALIZADOR_2% /ru SYSTEM /f
+    )
     echo Tarefas agendadas configuradas com sucesso (%HORA_ATUALIZADOR_1% e %HORA_ATUALIZADOR_2%).
 ) else (
     echo [AVISO] Arquivo do updater nao encontrado em: %SCRIPT_UPDATER%
