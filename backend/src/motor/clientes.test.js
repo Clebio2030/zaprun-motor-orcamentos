@@ -53,7 +53,8 @@ test('mapCliente decodifica WIN1252 e monta o payload', () => {
   assert.strictEqual(c.ultimoPedido.loja, 'ZÉ GRANDE MIGUEL COUTO');
   assert.strictEqual(c.ultimoPedido.vendedorNome, 'MÁRCIA');
   assert.strictEqual(c.inativoNoErp, false);
-  assert.strictEqual(c.raw.CLIENTE ?? c.raw.cliente, 'JOSÉ DA CONCEIÇÃO');
+  const rawCli = c.raw.CLIENTE !== undefined ? c.raw.CLIENTE : c.raw.cliente;
+  assert.strictEqual(rawCli, 'JOSÉ DA CONCEIÇÃO');
 });
 
 test('cliente que nunca comprou: datas nulas e zero pedidos', () => {

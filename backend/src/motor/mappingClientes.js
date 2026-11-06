@@ -69,7 +69,7 @@ function mapCliente(row) {
     cadastradoEm: toDateOnly(col(row, 'DTCADASTRO')),
     primeiraCompraEm: toDateOnly(col(row, 'DT_PRIMEIRA_COMPRA')),
     ultimaCompraEm: toDateOnly(col(row, 'DT_ULTIMA_COMPRA')),
-    totalPedidos: toInt(col(row, 'TOTAL_PEDIDOS')) ?? 0,
+    totalPedidos: toInt(col(row, 'TOTAL_PEDIDOS')) || 0,
     valorTotal: toNumber(col(row, 'VALOR_TOTAL_HISTORICO')),
     ultimoPedido: {
       numero: readTextOrNull(row, 'NRPEDIDO_ULTIMA_COMPRA'),
@@ -91,7 +91,10 @@ function mapCliente(row) {
 
 /** Em que loja do ERP o cliente "mora", para o escopo do token. */
 function empresaDoCliente(c) {
-  return c.ultimoPedido?.erpCompanyId ?? c.erpCompanyId ?? null;
+  const up = c.ultimoPedido && c.ultimoPedido.erpCompanyId;
+  if (up !== undefined && up !== null) return up;
+  if (c.erpCompanyId !== undefined && c.erpCompanyId !== null) return c.erpCompanyId;
+  return null;
 }
 
 /**

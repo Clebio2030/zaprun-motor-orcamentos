@@ -37,9 +37,9 @@ function baseUrl() {
 }
 
 function resolverEspera(err) {
-  const retryAfterSeg = err.response?.data?.retry_after;
+  const retryAfterSeg = err.response && err.response.data && err.response.data.retry_after;
   if (typeof retryAfterSeg === 'number') return retryAfterSeg * 1000;
-  const header = err.response?.headers?.['retry-after'];
+  const header = err.response && err.response.headers && err.response.headers['retry-after'];
   if (header && !Number.isNaN(Number(header))) return Number(header) * 1000;
   return RETRY_DELAY_MS;
 }
@@ -51,12 +51,13 @@ function resolverEspera(err) {
  * anterior. Um 400 do app vem em JSON e NÃO deve ser retentado.
  */
 function ehTransitorio(err) {
-  const status = err.response?.status;
+  const status = err.response && err.response.status;
   if (!status) return true;
   if (status >= 500 || status === 429) return true;
   return (
     status === 400 &&
-    typeof err.response?.data === 'string' &&
+    err.response &&
+    typeof err.response.data === 'string' &&
     err.response.data.includes('nginx')
   );
 }
@@ -85,16 +86,21 @@ async function handshake() {
 
   for (let tentativa = 1; tentativa <= RETRY_ATTEMPTS; tentativa++) {
     try {
-      const { data } = await axios.get(url, { headers: getHeaders(), timeout: 30_000 });
+      const { data } = await axios.get(url, { headers: getHeaders(), timeout: 30000 });
+      const empNome = (data && data.empresa && data.empresa.nome) || '?';
+      const dAtivo = data && data.ativo;
+      const dChunk = data && data.chunkSize;
+      const dJanela = data && data.janelaDias;
       logInfo(
-        `[ZapRun] Handshake OK — empresa: ${data?.empresa?.nome || '?'}, ativo: ${data?.ativo}, lote: ${data?.chunkSize}, janela: ${data?.janelaDias}d.`
+        `[ZapRun] Handshake OK — empresa: ${empNome}, ativo: ${dAtivo}, lote: ${dChunk}, janela: ${dJanela}d.`
       );
       return data;
     } catch (err) {
       if (ehTransitorio(err) && tentativa < RETRY_ATTEMPTS) {
         const espera = resolverEspera(err);
+        const errStatus = (err.response && err.response.status) || 'timeout';
         logWarn(
-          `[ZapRun] Handshake falhou (${err.response?.status || 'timeout'}). Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
+          `[ZapRun] Handshake falhou (${errStatus}). Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
         );
         await sleep(espera);
         continue;
@@ -124,19 +130,20 @@ async function postar(rota, payload) {
         headers: getHeaders(),
         timeout: POST_TIMEOUT_MS
       });
-      return { ok: true, persisted: response.data?.persisted };
+      return { ok: true, persisted: response.data && response.data.persisted };
     } catch (err) {
       if (ehTransitorio(err) && tentativa < RETRY_ATTEMPTS) {
         const espera = resolverEspera(err);
+        const errStatus = (err.response && err.response.status) || 'timeout';
         logWarn(
-          `[ZapRun] POST ${rota} retornou ${err.response?.status || 'timeout'}. Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
+          `[ZapRun] POST ${rota} retornou ${errStatus}. Tentativa ${tentativa}/${RETRY_ATTEMPTS}. Aguardando ${espera / 1000}s...`
         );
         await sleep(espera);
         continue;
       }
       const erro = detalharErro(err);
       logError(`[ZapRun] Falha definitiva no POST ${rota}: ${erro}`);
-      return { ok: false, erro, status: err.response?.status };
+      return { ok: false, erro, status: err.response && err.response.status };
     }
   }
   return { ok: false, erro: 'tentativas esgotadas' };

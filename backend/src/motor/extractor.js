@@ -21,7 +21,7 @@ async function listarEmpresasDoErp() {
   const rows = await query(SQL_EMPRESAS, []);
   const ids = [];
   for (const row of rows) {
-    const v = row.IDEMPRESA ?? row.idempresa;
+    const v = row.IDEMPRESA !== undefined ? row.IDEMPRESA : row.idempresa;
     const n = Number(v);
     if (Number.isFinite(n)) ids.push(n);
   }

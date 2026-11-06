@@ -78,7 +78,8 @@ test('ciclo completo: muda → grava → não muda mais', () => {
 test('empresas têm estados independentes', () => {
   updateState(7, 'hash-sete');
   assert.strictEqual(snapshotState()['7'].hash, 'hash-sete');
-  assert.notStrictEqual(snapshotState()['1']?.hash, 'hash-sete');
+  const s1 = snapshotState()['1'];
+  assert.notStrictEqual(s1 && s1.hash, 'hash-sete');
 });
 
 test('arquivo de estado corrompido é tratado como vazio, sem derrubar o serviço', () => {

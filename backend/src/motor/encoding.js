@@ -45,7 +45,8 @@ function fixEncoding(v) {
  * Retorna sempre string trimada; ausente/NULL → ''.
  */
 function readText(row, campo) {
-  const v = row[campo] ?? row[String(campo).toLowerCase()] ?? '';
+  let v = row[campo];
+  if (v === undefined) v = row[String(campo).toLowerCase()];
   if (v === null || v === undefined) return '';
   return fixEncoding(v).trim();
 }

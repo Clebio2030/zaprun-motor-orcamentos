@@ -64,20 +64,26 @@ async function lerColunas(tabelas = TABELAS_PADRAO) {
   for (const t of alvo) saida[t] = [];
 
   for (const r of rows) {
-    const tabela = String(r.TABELA ?? r.tabela ?? '').trim();
+    const rawTabela = r.TABELA !== undefined ? r.TABELA : r.tabela;
+    const tabela = String(rawTabela !== undefined && rawTabela !== null ? rawTabela : '').trim();
     if (!saida[tabela]) saida[tabela] = [];
 
-    const tipoNum = Number(r.TIPO ?? r.tipo);
+    const tipoNum = Number(r.TIPO !== undefined ? r.TIPO : r.tipo);
     // Subtipo 1/2 em SMALLINT/INTEGER/BIGINT indica NUMERIC/DECIMAL — um
     // "INTEGER" cru e um NUMERIC(15,2) pedem tratamento diferente na view.
-    const sub = Number(r.SUBTIPO ?? r.subtipo ?? 0);
+    const rawSub = r.SUBTIPO !== undefined ? r.SUBTIPO : r.subtipo;
+    const sub = Number(rawSub !== undefined && rawSub !== null ? rawSub : 0);
     const tipo = TIPOS[tipoNum] || `tipo-${tipoNum}`;
 
+    const rawCol = r.COLUNA !== undefined ? r.COLUNA : r.coluna;
+    const rawTam = r.TAMANHO !== undefined ? r.TAMANHO : r.tamanho;
+    const rawNaoNulo = r.NAO_NULO !== undefined ? r.NAO_NULO : r.nao_nulo;
+
     saida[tabela].push({
-      coluna: String(r.COLUNA ?? r.coluna ?? '').trim(),
+      coluna: String(rawCol !== undefined && rawCol !== null ? rawCol : '').trim(),
       tipo: sub === 1 ? `NUMERIC(${tipo})` : sub === 2 ? `DECIMAL(${tipo})` : tipo,
-      tamanho: Number(r.TAMANHO ?? r.tamanho) || null,
-      obrigatorio: Boolean(r.NAO_NULO ?? r.nao_nulo)
+      tamanho: Number(rawTam) || null,
+      obrigatorio: Boolean(rawNaoNulo)
     });
   }
 

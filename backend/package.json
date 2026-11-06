@@ -1,6 +1,6 @@
 {
   "name": "zaprun-motor-orcamentos",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Motor ZapRun Orçamentos — lê os orçamentos do ERP (Firebird) na máquina do cliente e entrega na API do ZapRun",
   "main": "src/server.js",
   "scripts": {

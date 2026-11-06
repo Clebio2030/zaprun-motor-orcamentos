@@ -79,7 +79,8 @@ function generateHash(orcamentos) {
  * @returns {string|null} ISO do último sync bem-sucedido, ou null se nunca houve.
  */
 function getLastSyncedAt(erpCompanyId) {
-  return loadState()[String(erpCompanyId)]?.lastSyncedAt ?? null;
+  const entry = loadState()[String(erpCompanyId)];
+  return (entry && entry.lastSyncedAt) || null;
 }
 
 /**
@@ -88,7 +89,8 @@ function getLastSyncedAt(erpCompanyId) {
 function checkStateChanged(erpCompanyId, orcamentos) {
   const state = loadState();
   const currentHash = generateHash(orcamentos);
-  const previousHash = state[String(erpCompanyId)]?.hash ?? null;
+  const entry = state[String(erpCompanyId)];
+  const previousHash = (entry && entry.hash) || null;
   return { changed: currentHash !== previousHash, hash: currentHash };
 }
 
