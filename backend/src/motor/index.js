@@ -148,9 +148,16 @@ async function runMotor() {
  *
  * @returns {Promise<boolean>} true só se a API confirmou TODAS as linhas.
  */
+function gerarUUID() {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return crypto.randomBytes(16).toString('hex');
+}
+
 async function enviarEmpresa({ erpCompanyId, orcamentos, chunkSize, meta }) {
   const expectedTotal = orcamentos.length;
-  const snapshotId = crypto.randomUUID();
+  const snapshotId = gerarUUID();
   const lotes = fatiarLote(orcamentos, chunkSize);
   let recebidosConfirmados = 0;
   // Acumulados: sem isto o log mostrava os números do ÚLTIMO lote ao lado do

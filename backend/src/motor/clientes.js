@@ -250,8 +250,15 @@ async function rodarClientes({ motivo = 'manual', forcarCompleto = false } = {})
  * no log e fica sem hash (vai de novo amanhã); não aborta a entrega — um
  * cliente com dado ruim não pode segurar a carteira inteira para sempre.
  */
+function gerarUUID() {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return crypto.randomBytes(16).toString('hex');
+}
+
 async function enviarLotes({ enviar, hashes, state, chunkSize, modo, totalCarteira, postar = enviarClientes, salvar = estado.salvar }) {
-  const snapshotId = crypto.randomUUID();
+  const snapshotId = gerarUUID();
   const lotes = fatiarLote(enviar, chunkSize);
   let confirmados = 0;
   let rejeitados = 0;
