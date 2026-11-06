@@ -104,26 +104,32 @@ if not exist "backend" goto ERROR_NO_BACKEND
 
 cd backend
 
-:: Se o node_modules contem resquicio de versao incompativel (com optional chaining), remove.
+:: Se o node_modules contem resquicio de versao incompativel (body-parser 2.x
+:: com optional chaining "?."), detecta e remove antes de prosseguir.
+set "LIMPAR_DEPS=0"
 if exist "node_modules\body-parser\lib\types\json.js" (
-    findstr "reviver" "node_modules\body-parser\lib\types\json.js" >nul 2>&1
-    if !errorlevel! EQU 0 (
-        echo.
-        echo [AVISO] Detectadas dependencias antigas incompativeis. Limpando pasta node_modules...
-        rd /s /q "node_modules" >nul 2>&1
-    )
+    findstr /C:"options?." "node_modules\body-parser\lib\types\json.js" >nul 2>&1
+    if !errorlevel! EQU 0 set "LIMPAR_DEPS=1"
+)
+if "!LIMPAR_DEPS!"=="1" (
+    echo.
+    echo [AVISO] Detectadas dependencias antigas incompativeis. Limpando pasta node_modules...
+    rd /s /q "node_modules" >nul 2>&1
 )
 
 if exist "node_modules\express" (
     echo.
     echo [SUCESSO] Dependencias ja estao inclusas no pacote!
-) else (
-    echo Executando 'npm install' (pode levar alguns minutos)...
-    call npm install
-    if !errorlevel! NEQ 0 goto ERROR_INSTALL
-    echo.
-    echo [SUCESSO] Dependencias instaladas!
+    goto DEPS_OK
 )
+
+echo Executando 'npm install' (pode levar alguns minutos)...
+call npm install
+if %errorlevel% NEQ 0 goto ERROR_INSTALL
+echo.
+echo [SUCESSO] Dependencias instaladas!
+
+:DEPS_OK
 
 :: ==================================================
 :: [PASSO 3/5] AMBIENTE (.env)

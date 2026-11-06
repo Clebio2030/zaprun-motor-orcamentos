@@ -11,3 +11,4 @@ if exist "%NODE_EXE%" (
     node "%~dp0updater.js"
 )
 endlocal
+
